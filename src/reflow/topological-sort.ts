@@ -1,6 +1,11 @@
 import type { WorkOrder } from '../types/index.ts';
 
 /**
+ * PROMPT USED TO GENERATE THIS CODE:
+ This file should export a function that take in an array of workOrders and uses Khan's topological graphing algorithm to order them.
+ */
+
+/**
  * Performs topological sort on work orders using Kahn's algorithm.
  *
  * Ensures that all dependency work orders come before dependent work orders
@@ -16,7 +21,7 @@ import type { WorkOrder } from '../types/index.ts';
  *
  * @param workOrders - Array of work orders to sort
  * @returns Topologically sorted array of work orders
- * @throws {Error} If circular dependencies are detected
+ * @throws {Error} If circular dependencies are detected or if there is no work order without a dependency
  */
 export function topologicalSort(workOrders: WorkOrder[]): WorkOrder[] {
     // Handle empty array
@@ -31,12 +36,12 @@ export function topologicalSort(workOrders: WorkOrder[]): WorkOrder[] {
     });
 
     // Calculate in-degree (number of dependencies) for each work order
-    const inDegree = new Map<string, number>();
+    const inDegreeMap = new Map<string, number>();
     const adjacencyList = new Map<string, string[]>(); // Maps work order to its dependents
 
     // Initialize in-degree and adjacency list
     workOrders.forEach(wo => {
-        inDegree.set(wo.workOrderNumber, wo.dependsOnWorkOrderIds.length);
+        inDegreeMap.set(wo.workOrderNumber, wo.dependsOnWorkOrderIds.length);
         adjacencyList.set(wo.workOrderNumber, []);
     });
 
@@ -45,18 +50,16 @@ export function topologicalSort(workOrders: WorkOrder[]): WorkOrder[] {
     workOrders.forEach(wo => {
         wo.dependsOnWorkOrderIds.forEach(depId => {
             const depList = adjacencyList.get(depId);
-            if (depList) {
-                depList.push(wo.workOrderNumber);
-            }
+            if (!depList) return
+            depList.push(wo.workOrderNumber);
         });
     });
 
     // Queue of work orders with no dependencies (in-degree = 0)
     const queue: string[] = [];
-    inDegree.forEach((degree, woNumber) => {
-        if (degree === 0) {
-            queue.push(woNumber);
-        }
+    inDegreeMap.forEach((degree, woNumber) => {
+        if (degree !== 0) return
+        queue.push(woNumber);
     });
 
     // Result array
@@ -65,7 +68,8 @@ export function topologicalSort(workOrders: WorkOrder[]): WorkOrder[] {
     // Process queue using Kahn's algorithm
     while (queue.length > 0) {
         // Remove work order with no dependencies
-        const currentWoNumber = queue.shift()!;
+        const currentWoNumber = queue.shift();
+        if (!currentWoNumber) throw new Error('Queue is empty');
         const currentWo = workOrderMap.get(currentWoNumber);
 
         if (!currentWo) {
@@ -78,13 +82,14 @@ export function topologicalSort(workOrders: WorkOrder[]): WorkOrder[] {
         const dependents = adjacencyList.get(currentWoNumber) || [];
         dependents.forEach(dependentWoNumber => {
             // Decrease in-degree
-            const currentInDegree = inDegree.get(dependentWoNumber)!;
-            inDegree.set(dependentWoNumber, currentInDegree - 1);
+            let degree = inDegreeMap.get(dependentWoNumber);
+            if (!degree) return;
+            degree--;
+            inDegreeMap.set(dependentWoNumber, degree);
 
             // If in-degree becomes 0, add to queue
-            if (currentInDegree - 1 === 0) {
-                queue.push(dependentWoNumber);
-            }
+            if (degree !== 0) return;
+            queue.push(dependentWoNumber);
         });
     }
 
