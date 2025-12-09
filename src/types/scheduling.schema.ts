@@ -52,7 +52,8 @@ export const ScheduleSummarySchema = z.object({
     changedWorkOrders: z.number().int().nonnegative(),
     unchangedWorkOrders: z.number().int().nonnegative(),
     maintenanceWorkOrders: z.number().int().nonnegative(),
-    totalDelayMinutes: z.number().nonnegative()
+    oldDurationMinutes: z.number().nonnegative(),
+    totalDurationMinutes: z.number().nonnegative()
 });
 
 /**

@@ -4,7 +4,7 @@ import { DateTimeSchema, DocumentSchema } from './common.schema.ts';
 // Manufacturing Order data schema
 export const ManufacturingOrderSchema = z.object({
     manufacturingOrderNumber: z.string().min(1),
-    itemId: z.uuid(),
+    itemId: z.string(),
     quantity: z.number().int().positive(),
     dueDate: DateTimeSchema
 });

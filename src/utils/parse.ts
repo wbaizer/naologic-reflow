@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import { type ParseResult, type WorkCenter, type WorkOrder, type ManufacturingOrder, type AnyDocument, AnyDocumentSchema, ManufacturingOrderDocumentSchema, WorkCenterDocumentSchema, WorkOrderDocumentSchema } from '../types/index.ts';
 
 /**
@@ -51,6 +52,90 @@ export function parseDataString(content: string, source: string = 'string input'
 }
 
 /**
+ * Preprocesses a raw document by converting ISO date strings to Luxon DateTime objects
+ * and ensuring docId is a valid UUID.
+ *
+ * @param doc - Raw document object from JSON
+ * @returns Preprocessed document ready for schema validation
+ */
+function preprocessDocument(doc: any): any {
+    // Deep clone to avoid mutations
+    const processed = JSON.parse(JSON.stringify(doc));
+
+    // Convert ISO strings to DateTime objects and ID strings to UUIDs recursively
+    function convertDatesAndIds(obj: any, key?: string): any {
+        if (typeof obj === 'string') {
+            // Check if this is an ID field that should be a UUID
+            // Handle both singular "xxxId" fields and parent key for array items "xxxIds"
+            const parentIsIdArray = key && key.endsWith('Ids');
+            const isIdField = key && key.endsWith('Id');
+
+            if ((isIdField || parentIsIdArray) && !isUUID(obj)) {
+                return stringToUUID(obj);
+            }
+
+            // Try to parse as ISO date
+            const dt = DateTime.fromISO(obj);
+            if (dt.isValid) {
+                return dt;
+            }
+            return obj;
+        } else if (Array.isArray(obj)) {
+            // Pass the parent key to array items (e.g., "dependsOnWorkOrderIds")
+            return obj.map((item) => convertDatesAndIds(item, key));
+        } else if (obj && typeof obj === 'object') {
+            const result: any = {};
+            for (const objKey in obj) {
+                result[objKey] = convertDatesAndIds(obj[objKey], objKey);
+            }
+            return result;
+        }
+        return obj;
+    }
+
+    // Convert all date strings and ID fields in the document
+    processed.data = convertDatesAndIds(processed.data);
+
+    // Generate UUID from docId if it's not already a UUID
+    if (processed.docId && typeof processed.docId === 'string' && !isUUID(processed.docId)) {
+        processed.docId = stringToUUID(processed.docId);
+    }
+
+    return processed;
+}
+
+/**
+ * Checks if a string is a valid UUID.
+ *
+ * @param str - String to check
+ * @returns true if valid UUID, false otherwise
+ */
+function isUUID(str: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+}
+
+/**
+ * Converts a string to a deterministic UUID v5-like format.
+ *
+ * @param str - Input string
+ * @returns UUID string
+ */
+function stringToUUID(str: string): string {
+    // Simple hash function to generate a deterministic UUID
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+
+    // Convert to hex and pad to create UUID format
+    const hex = Math.abs(hash).toString(16).padStart(8, '0');
+    return `${hex.slice(0, 8)}-${hex.slice(0, 4)}-4${hex.slice(0, 3)}-8${hex.slice(0, 3)}-${hex.padEnd(12, '0').slice(0, 12)}`;
+}
+
+/**
  * Internal function to parse document objects from text content.
  *
  * @param content - Text content with JSON objects
@@ -73,9 +158,13 @@ function parseDocuments(content: string, source: string): ParseResult {
         if (!line) continue;
 
         try {
-            // Try to parse as JSON
-            const { success, data: doc, error } = AnyDocumentSchema.safeParse(JSON.parse(line));
-            if (error) throw new Error(`Invalid document at line ${i + 1} in ${source}: ${error.message}`);
+            // Parse JSON and preprocess to convert ISO strings to DateTime objects
+            const rawDoc: any = JSON.parse(line);
+            const preprocessedDoc = preprocessDocument(rawDoc);
+
+            // Validate with schema
+            const { success, data: doc, error } = AnyDocumentSchema.safeParse(preprocessedDoc);
+            if (error) throw new Error(`Invalid document at line ${i + 1} in ${source}: ${JSON.stringify(error.issues, null, 2)}`);
             else if (!success || !doc) throw new Error(`Invalid document at line ${i + 1} in ${source}`);
             documentCount++;
 

@@ -2,10 +2,9 @@
   "name": "naologic-reflow",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.ts",
+  "main": "index.ts",
   "scripts": {
-    "dev": "bun run src/index.ts",
-    "start": "bun run src/index.ts",
+    "reflow": "bun run index.ts",
     "test": "bun test"
   },
   "repository": {

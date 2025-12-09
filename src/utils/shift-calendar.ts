@@ -118,7 +118,7 @@ export class ShiftCalendar {
         });
 
         // Build result
-        const scheduledWorkOrders = workOrders.map((wo, index) => {
+        const scheduledWorkOrders = workOrders.map((wo) => {
             const state = scheduledStates.get(wo.workOrderNumber);
             if (!state) {
                 throw new Error(`Internal error: Work order ${wo.workOrderNumber} was not scheduled`);
@@ -133,7 +133,9 @@ export class ShiftCalendar {
 
         // Calculate summary statistics
         const changedCount = changes.filter(c => c.delayMinutes > 0).length;
-        const totalDelay = changes.reduce((sum, c) => sum + c.delayMinutes, 0);
+
+        // Calculate total duration: minutes between earliest start and latest end
+        const totalDurationMinutes = this.calculateTotalDuration(scheduledWorkOrders);
 
         return {
             scheduledWorkOrders,
@@ -143,7 +145,8 @@ export class ShiftCalendar {
                 changedWorkOrders: changedCount,
                 unchangedWorkOrders: workOrders.length - changedCount,
                 maintenanceWorkOrders: maintenanceOrders.length,
-                totalDelayMinutes: totalDelay
+                oldDurationMinutes: this.calculateTotalDuration(workOrders),
+                totalDurationMinutes
             }
         };
     }
@@ -165,6 +168,35 @@ export class ShiftCalendar {
                 `Work orders do not belong to work center "${this.workCenter.name}": ${invalidNumbers}`
             );
         }
+    }
+
+    /**
+     * Calculates total duration from earliest start date to latest end date.
+     *
+     * @param workOrders - Scheduled work orders
+     * @returns Total duration in minutes
+     */
+    private calculateTotalDuration(workOrders: WorkOrder[]): number {
+        if (workOrders.length === 0) return 0;
+
+        // Find earliest start date
+        let earliestStart = workOrders[0]?.startDate;
+        if (!earliestStart) return 0;
+        for (const wo of workOrders) {
+            if (wo.startDate >= earliestStart) continue;
+            earliestStart = wo.startDate;
+        }
+
+        // Find latest end date
+        let latestEnd = workOrders[0]?.endDate;
+        if (!latestEnd) return 0;
+        for (const wo of workOrders) {
+            if (wo.endDate <= latestEnd) continue;
+            latestEnd = wo.endDate;
+        }
+
+        // Calculate duration in minutes
+        return latestEnd.diff(earliestStart, 'minutes').minutes;
     }
 
     /**

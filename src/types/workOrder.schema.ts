@@ -4,8 +4,8 @@ import { DateTimeSchema, DocumentSchema } from './common.schema.ts';
 // Work Order data schema
 export const WorkOrderSchema = z.object({
     workOrderNumber: z.string().min(1),
-    manufacturingOrderId: z.uuid(),
-    workCenterId: z.uuid(),
+    manufacturingOrderId: z.string(),
+    workCenterId: z.string(),
 
     // Timing
     startDate: DateTimeSchema,
@@ -16,7 +16,7 @@ export const WorkOrderSchema = z.object({
     isMaintenance: z.boolean(),
 
     // Dependencies
-    dependsOnWorkOrderIds: z.array(z.uuid())
+    dependsOnWorkOrderIds: z.array(z.string())
 }).refine(
     (data) => data.endDate >= data.startDate,
     {

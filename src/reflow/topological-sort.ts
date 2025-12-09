@@ -21,13 +21,11 @@ import type { WorkOrder } from '../types/index.ts';
  *
  * @param workOrders - Array of work orders to sort
  * @returns Topologically sorted array of work orders
- * @throws {Error} If circular dependencies are detected or if there is no work order without a dependency
+ * @throws {Error} If circular dependencies are detected
  */
 export function topologicalSort(workOrders: WorkOrder[]): WorkOrder[] {
     // Handle empty array
-    if (workOrders.length === 0) {
-        return [];
-    }
+    if (workOrders.length === 0) return [];
 
     // Create a map for quick lookup by work order number
     const workOrderMap = new Map<string, WorkOrder>();
@@ -109,53 +107,3 @@ export function topologicalSort(workOrders: WorkOrder[]): WorkOrder[] {
     return sorted;
 }
 
-/**
- * Validates work order dependencies without sorting.
- *
- * Checks that all referenced dependencies exist and that there are no circular dependencies.
- *
- * @param workOrders - Array of work orders to validate
- * @returns Object with validation results
- */
-export function validateWorkOrderDependencies(workOrders: WorkOrder[]): {
-    valid: boolean;
-    missingDependencies: string[];
-    circularDependencies: boolean;
-    errors: string[];
-} {
-    const errors: string[] = [];
-    const missingDependencies: string[] = [];
-    const workOrderNumbers = new Set(workOrders.map(wo => wo.workOrderNumber));
-
-    // Check for missing dependencies
-    workOrders.forEach(wo => {
-        wo.dependsOnWorkOrderIds.forEach(depId => {
-            if (!workOrderNumbers.has(depId)) {
-                missingDependencies.push(depId);
-                errors.push(
-                    `Work order ${wo.workOrderNumber} depends on ${depId}, which is not in the work order list`
-                );
-            }
-        });
-    });
-
-    // Check for circular dependencies by attempting topological sort
-    let circularDependencies = false;
-    if (missingDependencies.length === 0) {
-        try {
-            topologicalSort(workOrders);
-        } catch (error) {
-            if (error instanceof Error && error.message.includes('Circular dependency')) {
-                circularDependencies = true;
-                errors.push(error.message);
-            }
-        }
-    }
-
-    return {
-        valid: errors.length === 0,
-        missingDependencies: Array.from(new Set(missingDependencies)),
-        circularDependencies,
-        errors
-    };
-}
