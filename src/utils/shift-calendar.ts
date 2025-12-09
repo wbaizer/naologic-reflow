@@ -71,10 +71,8 @@ export class ShiftCalendar {
 
         // Create a map for quick lookup by ID
         const workOrderMap = new Map<string, WorkOrder>();
-        workOrders.forEach((wo, index) => {
-            // Use index as a simple ID if docId doesn't exist
-            const id = `wo-${index}`;
-            workOrderMap.set(id, wo);
+        workOrders.forEach((wo) => {
+            workOrderMap.set(wo.workOrderNumber, wo);
         });
 
         // Track scheduled work orders
@@ -447,14 +445,17 @@ export class ShiftCalendar {
             if (latestDepEndTime && latestDepEndTime > workOrder.startDate) {
                 // Find which dependency caused the delay
                 for (const depId of workOrder.dependsOnWorkOrderIds) {
-                    const depIndex = allWorkOrders.findIndex(wo =>
-                        wo.workOrderNumber === depId || allWorkOrders.indexOf(wo).toString() === depId
-                    );
-                    const depState = scheduledStates.get(`wo-${depIndex}`);
+                    const depWorkOrder = allWorkOrders.find(wo => wo.workOrderNumber === depId);
+                    if (!depWorkOrder) {
+                        throw new Error(
+                            `Dependency not found: Work order ${workOrder.workOrderNumber} ` +
+                            `depends on ${depId} which is not in the work order list`
+                        );
+                    }
+                    const depState = scheduledStates.get(depWorkOrder.workOrderNumber);
                     if (depState && depState.scheduledEndDate === latestDepEndTime) {
                         return {
                             type: 'dependency',
-                            dependsOnWorkOrderId: `wo-${depIndex}`,
                             dependsOnWorkOrderNumber: depState.workOrder.workOrderNumber
                         };
                     }
@@ -464,7 +465,7 @@ export class ShiftCalendar {
 
         // Check for work center conflicts
         for (const [id, state] of scheduledStates) {
-            if (id !== `wo-${allWorkOrders.indexOf(workOrder)}`) {
+            if (id !== workOrder.workOrderNumber) {
                 if (this.hasTimeOverlap(
                     workOrder.startDate,
                     workOrder.endDate,

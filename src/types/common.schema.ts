@@ -15,7 +15,7 @@ export const DocTypeSchema = z.enum(['workOrder', 'workCenter', 'manufacturingOr
 // Base document schema
 export const DocumentSchema = <T extends z.ZodTypeAny>(docType: z.ZodLiteral<string>, dataSchema: T) =>
     z.object({
-        docId: z.uuid(),
+        docId: z.string(),
         docType: docType,
         data: dataSchema
     });

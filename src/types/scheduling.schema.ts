@@ -9,7 +9,6 @@ export const ChangeReasonSchema = z.discriminatedUnion('type', [
     // Work order delayed due to dependency constraint
     z.object({
         type: z.literal('dependency'),
-        dependsOnWorkOrderId: z.string(),
         dependsOnWorkOrderNumber: z.string()
     }),
     // Work order delayed due to maintenance window

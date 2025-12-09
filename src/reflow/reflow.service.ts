@@ -22,6 +22,7 @@ interface ReflowResult {
         totalWorkCenters: number;
         totalWorkOrders: number;
         totalChanges: number;
+        oldDurationMinutes: number;
         totalDurationMinutes: number;
         totalDelayMinutes: number;
     };
@@ -97,8 +98,9 @@ export async function reflowFromFile(filePath: string): Promise<void> {
             totalWorkCenters: workCenterResults.length,
             totalWorkOrders,
             totalChanges,
+            oldDurationMinutes,
             totalDurationMinutes,
-            totalDelayMinutes: oldDurationMinutes - totalDurationMinutes,
+            totalDelayMinutes: totalDurationMinutes - oldDurationMinutes,
         }
     });
 }
@@ -113,6 +115,7 @@ function printReflowSummary(result: ReflowResult): void {
     console.log(`Total Work Centers: ${result.summary.totalWorkCenters}`);
     console.log(`Total Work Orders: ${result.summary.totalWorkOrders}`);
     console.log(`Work Orders Changed: ${result.summary.totalChanges}`);
+    console.log(`Old Duration: ${Math.floor(result.summary.oldDurationMinutes / 60)}h ${result.summary.oldDurationMinutes % 60}m`);
     console.log(`Total Duration: ${Math.floor(result.summary.totalDurationMinutes / 60)}h ${result.summary.totalDurationMinutes % 60}m`);
     console.log(`Total Delay: ${Math.floor(result.summary.totalDelayMinutes / 60)}h ${result.summary.totalDelayMinutes % 60}m`);
 
@@ -133,7 +136,8 @@ function printReflowSummary(result: ReflowResult): void {
             if (change.delayMinutes > 0) {
                 console.log(`  ${change.workOrderNumber}:`);
                 console.log(`    ${change.explanation}`);
-                console.log(`    New: ${change.newStartDate.toISO()} � ${change.newEndDate.toISO()}`);
+                console.log(`    Old start: ${change.originalStartDate.toISO()} -> end: ${change.originalEndDate.toISO()}`);
+                console.log(`    New start: ${change.newStartDate.toISO()} -> end: ${change.newEndDate.toISO()}`);
             }
         });
     });
