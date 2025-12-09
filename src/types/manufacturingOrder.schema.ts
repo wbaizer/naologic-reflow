@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { DateTimeSchema, DocumentSchema } from './common.schema.ts';
 
 // Manufacturing Order data schema
-export const ManufacturingOrderDataSchema = z.object({
+export const ManufacturingOrderSchema = z.object({
     manufacturingOrderNumber: z.string().min(1),
     itemId: z.uuid(),
     quantity: z.number().int().positive(),
@@ -12,9 +12,9 @@ export const ManufacturingOrderDataSchema = z.object({
 // Manufacturing Order document schema
 export const ManufacturingOrderDocumentSchema = DocumentSchema(
     z.literal('manufacturingOrder'),
-    ManufacturingOrderDataSchema
+    ManufacturingOrderSchema
 );
 
 // Inferred types
-export type ManufacturingOrderData = z.infer<typeof ManufacturingOrderDataSchema>;
+export type ManufacturingOrder = z.infer<typeof ManufacturingOrderSchema>;
 export type ManufacturingOrderDocument = z.infer<typeof ManufacturingOrderDocumentSchema>;

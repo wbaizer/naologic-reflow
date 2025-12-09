@@ -16,8 +16,8 @@ export const MaintenanceWindowSchema = z.object({
 });
 
 // Work Center data schema
-export const WorkCenterDataSchema = z.object({
-    name: z.string().min(1),
+export const WorkCenterSchema = z.object({
+    name: z.string().min(1), // assumes unique name for work center
     shifts: z.array(ShiftSchema),
     maintenanceWindows: z.array(MaintenanceWindowSchema)
 });
@@ -25,11 +25,11 @@ export const WorkCenterDataSchema = z.object({
 // Work Center document schema
 export const WorkCenterDocumentSchema = DocumentSchema(
     z.literal('workCenter'),
-    WorkCenterDataSchema
+    WorkCenterSchema
 );
 
 // Inferred types
 export type Shift = z.infer<typeof ShiftSchema>;
 export type MaintenanceWindow = z.infer<typeof MaintenanceWindowSchema>;
-export type WorkCenterData = z.infer<typeof WorkCenterDataSchema>;
+export type WorkCenter = z.infer<typeof WorkCenterSchema>;
 export type WorkCenterDocument = z.infer<typeof WorkCenterDocumentSchema>;

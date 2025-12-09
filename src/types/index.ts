@@ -18,3 +18,4 @@ export * from './common.schema.ts';
 export * from './workCenter.schema.ts';
 export * from './workOrder.schema.ts';
 export * from './manufacturingOrder.schema.ts';
+export * from './scheduling.schema.ts';

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { DateTimeSchema, DocumentSchema } from './common.schema.ts';
 
 // Work Order data schema
-export const WorkOrderDataSchema = z.object({
+export const WorkOrderSchema = z.object({
     workOrderNumber: z.string().min(1),
     manufacturingOrderId: z.uuid(),
     workCenterId: z.uuid(),
@@ -28,9 +28,9 @@ export const WorkOrderDataSchema = z.object({
 // Work Order document schema
 export const WorkOrderDocumentSchema = DocumentSchema(
     z.literal('workOrder'),
-    WorkOrderDataSchema
+    WorkOrderSchema
 );
 
 // Inferred types
-export type WorkOrderData = z.infer<typeof WorkOrderDataSchema>;
+export type WorkOrder = z.infer<typeof WorkOrderSchema>;
 export type WorkOrderDocument = z.infer<typeof WorkOrderDocumentSchema>;
