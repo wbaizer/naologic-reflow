@@ -19,3 +19,5 @@ export * from './workCenter.schema.ts';
 export * from './workOrder.schema.ts';
 export * from './manufacturingOrder.schema.ts';
 export * from './scheduling.schema.ts';
+export * from './parser.schema.ts';
+export * from './workCenterGroup.schema.ts';
