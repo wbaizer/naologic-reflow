@@ -24,7 +24,7 @@ Built with **Bun**, **TypeScript**, **Luxon** (DateTime library), and **Zod** (s
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/wbaizer/naologic-reflow.git
 cd naologic-reflow
 
 # Install dependencies
@@ -59,7 +59,7 @@ Work Center: Assembly Line A
   Duration Metrics:
     Old Duration: 660 minutes (11 hours)
     New Duration: 960 minutes (16 hours)
-    Total Delay: -300 minutes (-5 hours)
+    Total Delay: 300 minutes (5 hours)
     Changed Work Orders: 4 of 5 (80%)
 ```
 

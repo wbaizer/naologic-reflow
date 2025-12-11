@@ -1,6 +1,10 @@
 import type { WorkCenter, WorkOrder, ManufacturingOrder, WorkCenterGroup } from '../types/index.ts';
 
 /**
+ * @upgrade Connect manufacturing orders to work orders
+ */ 
+
+/**
  * Groups work orders and manufacturing orders by work center.
  *
  * For each work center:
