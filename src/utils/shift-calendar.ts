@@ -30,6 +30,8 @@ interface WorkOrderScheduleState {
  * - No overlapping work orders on the same work center
  *
  * Produces a valid schedule with detailed change tracking and explanations.
+ * 
+ * @upgrade Account for manufacturing order due dates
  */
 export class ShiftCalendar {
     private readonly workCenter: WorkCenter;

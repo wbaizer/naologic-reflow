@@ -299,6 +299,140 @@ XXXXX = Non-working time (weekend)
 
 ---
 
+### Scenario 7: Complex Multi-Level Dependencies with Variable Shifts
+**File:** `scenario-7-complex-dependencies-2.jsonl`
+
+**Purpose:** Tests deeply nested dependency graphs with multiple convergence points, variable shift schedules, and maintenance conflicts.
+
+**Setup:**
+- Work Center: Multi-Stage Line E (variable shifts across weekdays, with lunch breaks)
+  - Monday: 7am-12pm, 1pm-5pm
+  - Tuesday: 8am-12pm, 1pm-7pm
+  - Wednesday: 7am-12pm, 1pm-5pm
+  - Thursday: 7am-12pm, 1pm-6pm
+  - Friday: 7am-12pm, 1pm-11pm (extended evening shift)
+- 9 production work orders with multi-level dependencies
+- 3 maintenance work orders (fixed schedule)
+- Maintenance window: Jan 14, 4pm-6pm
+
+**Dependency Graph (Complex Multi-Level Tree):**
+```
+Three independent root chains:
+
+Chain 1:                Chain 2:            Chain 3:
+WO-05 (120min)          WO-02 (180min)      WO-09 (120min)
+  ↓                       ↓                   ↓
+WO-04 (120min)            │                 WO-08 (120min)
+[dep: WO-05]              │                 [dep: WO-09]
+  ↓                       │                   ↓
+  ├───────┐               │                 WO-07 (120min)
+  ↓       ↓               │                 [dep: WO-08]
+WO-06   WO-03─────────────┘
+(120min) (180min)
+[dep:04,05] [dep:04,05]
+            ↓
+            └──────┐
+                   ↓
+               WO-01 (240min)
+             [dep: WO-02, WO-03]
+         (Final convergence point)
+
+MAINTENANCE (FIXED):
+  WO-MAINT-1: Jan 14, 4pm-6pm (120min)
+  WO-MAINT-2: Jan 15, 4pm-6pm (120min)
+  WO-MAINT-3: Jan 15, 4pm-6pm (120min) [conflicts with MAINT-2]
+```
+
+**Detailed Dependency Breakdown:**
+```
+Level 0 (Roots - 3 independent starting points):
+  WO-05 → no dependencies (Chain 1 root)
+  WO-02 → no dependencies (Chain 2 root)
+  WO-09 → no dependencies (Chain 3 root)
+
+Level 1:
+  WO-04 → depends on [WO-05]
+  WO-08 → depends on [WO-09]
+
+Level 2:
+  WO-06 → depends on [WO-04, WO-05]
+  WO-03 → depends on [WO-04, WO-05]
+  WO-07 → depends on [WO-08]
+
+Level 3 (Final convergence):
+  WO-01 → depends on [WO-02, WO-03]
+```
+
+**Work Order Details:**
+
+Chain 1 (WO-05 root):
+- WO-05: 120 min, no dependencies (root)
+- WO-04: 120 min, waits for WO-05
+- WO-06: 120 min, waits for BOTH WO-04 AND WO-05
+- WO-03: 180 min, waits for BOTH WO-04 AND WO-05
+
+Chain 2 (WO-02 root):
+- WO-02: 180 min, no dependencies (root)
+
+Chain 3 (WO-09 root):
+- WO-09: 120 min, no dependencies (root)
+- WO-08: 120 min, waits for WO-09
+- WO-07: 120 min, waits for WO-08
+
+Final Convergence:
+- WO-01: 240 min, waits for BOTH WO-02 AND WO-03 (chains 1 & 2 converge)
+
+**Timeline Visualization:**
+```
+Multi-Stage Line E [Variable shifts Mon-Fri]
+────────────────────────────────────────────────────────────────────
+Jan 13 (Mon)  7am    9am    11am | 1pm    3pm    5pm    7pm    9pm
+Shift         ├─────├──────┤LUNCH├─────├─────┤
+              │WO05─│      │     │     │     │
+              │     │WO04──│     │     │     │
+              │WO02─├──────│─────│     │     │
+              │     │      │     │WO03─├─────│
+              │     │      │     │     │     │WO06─┐
+              │WO09─│      │     │     │     │     │
+              │     │WO08──│     │     │     │     │
+                                        (spans to Tue)
+
+Jan 14 (Tue)  8am    10am   12pm | 1pm    3pm    5pm    7pm
+Shift         ├─────├──────┤LUNCH├─────├─────├─────├─────┤
+              WO06──│      │     │     │     │     │     │
+              │     │WO07──│     │     │     │     │     │
+              │     │      │     │WO01─├─────│XXXXX│WO01─│
+                                              MAINT
+                                              XXXXX
+                                             CONFLICT!
+
+XXXXX = Maintenance Window (blocked time)
+```
+
+**Expected Behavior:**
+- **Three independent root chains**: WO-05, WO-02, and WO-09 can all start simultaneously (no dependencies)
+- **Multi-level convergence**: WO-01 must wait for WO-02 AND WO-03, where WO-03 itself waits for WO-04 and WO-05
+- **Parallel execution**: All three root chains (WO-05, WO-02, WO-09) run in parallel
+- **Fan-out then fan-in**: WO-05 → WO-04 → splits into both WO-06 and WO-03
+- **Chain isolation**: Chain 3 (WO-09→WO-08→WO-07) is completely independent and never converges with other chains
+- **Final convergence point**: Only chains 1 and 2 converge at WO-01 (via WO-03 and WO-02)
+- **Variable shift handling**: Different working hours each day (Monday 7am-5pm, Tuesday 8am-7pm, etc.)
+- **Lunch break pauses**: Work pauses during 12pm-1pm daily
+- **Maintenance conflicts**: WO-01 scheduled for 3pm-7pm conflicts with 4pm-6pm maintenance
+- **Multiple maintenance orders**: WO-MAINT-2 and WO-MAINT-3 both scheduled at same time (4pm-6pm on Jan 15)
+
+**Key Test Features:**
+1. **Three independent root chains** starting in parallel
+2. **Deep dependency nesting** (4 levels: root → level 1 → level 2 → level 3)
+3. **Multiple convergence points** (WO-06, WO-03, WO-01)
+4. **Isolated chain** (Chain 3 never converges with others)
+5. **Variable shift schedules** across weekdays
+6. **Lunch break handling** (12pm-1pm gaps)
+7. **Maintenance window conflicts**
+8. **Overlapping maintenance orders** (same time slot)
+
+---
+
 ## Summary of Test Coverage
 
 | Scenario | Tests Feature | Visual Pattern |
@@ -309,6 +443,7 @@ XXXXX = Non-working time (weekend)
 | 4 | Shift gaps (lunch breaks), non-continuous shifts | Work spanning non-continuous shifts |
 | 5 | Multiple parent dependencies, complex graphs | Diamond: BASE₁,BASE₂ → MID₁,MID₂ → FINAL |
 | 6 | Weekend spanning, multi-day delays | Friday work → weekend pause → Monday resume |
+| 7 | Deep nested dependencies, variable shifts | Multi-level tree: 5 levels, multiple convergence points |
 
 ## Graph Symbols Legend
 
@@ -334,7 +469,7 @@ Each scenario should produce:
 
 ```bash
 # Test valid scenarios (should succeed)
-for file in scenario-{1,2,4,5,6}-*.jsonl; do
+for file in scenario-{1,2,4,5,6,7}-*.jsonl; do
   echo "Testing: $file"
   bun run reflow "test-scenarios/$file"
 done

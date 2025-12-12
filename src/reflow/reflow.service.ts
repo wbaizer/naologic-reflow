@@ -5,6 +5,10 @@ import { ShiftCalendar } from '../utils/shift-calendar.ts';
 import type { ScheduleResult } from '../types/index.ts';
 
 /**
+ * @upgrade Turn into a class that can be instantiated with a workcentergroup
+ */ 
+
+/**
  * Result of the reflow operation for a single work center.
  */
 interface WorkCenterReflowResult {
